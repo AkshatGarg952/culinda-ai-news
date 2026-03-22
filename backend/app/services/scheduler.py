@@ -15,6 +15,7 @@ from app.services.dedup import check_duplicate
 
 logger = structlog.get_logger()
 scheduler = AsyncIOScheduler()
+INGESTION_JOB_ID = "news_ingestion_cycle"
 
 async def process_articles(session: AsyncSession, source: Source):
     raw_articles = await fetch_source_articles(source)
@@ -85,6 +86,18 @@ async def run_ingestion_cycle():
     logger.info("completed_ingestion_cycle")
 
 def start_scheduler():
-    scheduler.add_job(run_ingestion_cycle, "interval", minutes=15)
+    if scheduler.get_job(INGESTION_JOB_ID) is None:
+        scheduler.add_job(
+            run_ingestion_cycle,
+            "interval",
+            minutes=15,
+            id=INGESTION_JOB_ID,
+            replace_existing=True,
+        )
+
+    if scheduler.running:
+        logger.info("scheduler_already_running")
+        return
+
     scheduler.start()
     logger.info("scheduler_started")

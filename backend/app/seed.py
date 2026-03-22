@@ -1,9 +1,12 @@
 import asyncio
+import logging
 from sqlalchemy.ext.asyncio import AsyncSession  # noqa: F401
 from sqlalchemy import select
 
 from app.core.database import AsyncSessionLocal
 from app.models.schema import Source, SourceType
+
+logger = logging.getLogger(__name__)
 
 INITIAL_SOURCES = [
     {"name": "OpenAI Blog", "url": "https://openai.com/blog/rss.xml", "type": SourceType.rss},
@@ -28,7 +31,9 @@ INITIAL_SOURCES = [
     {"name": "Stability AI Blog", "url": "https://stability.ai/news?format=rss", "type": SourceType.rss},
 ]
 
-async def seed_sources() -> None:
+async def seed_sources() -> int:
+    added_count = 0
+
     async with AsyncSessionLocal() as session:
         for source_data in INITIAL_SOURCES:
             statement = select(Source).where(Source.url == source_data["url"])
@@ -42,8 +47,16 @@ async def seed_sources() -> None:
                     type=source_data["type"]
                 )
                 session.add(new_source)
+                added_count += 1
         
         await session.commit()
-        print("Successfully seeded initial sources.")
+        logger.info("initial_sources_seeded", added=added_count)
+        return added_count
 
-asyncio.run(seed_sources())
+
+def main() -> None:
+    asyncio.run(seed_sources())
+
+
+if __name__ == "__main__":
+    main()

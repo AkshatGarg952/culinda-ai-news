@@ -5,7 +5,7 @@ class Settings(BaseSettings):
     postgres_password: str = "postgres"
     postgres_db: str = "news_db"
     database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/news_db"
-    sync_database_url: str = "postgresql://postgres:postgres@localhost:5432/news_db"
+    sync_database_url: str | None = None
     gemini_api_key: str = ""
     smtp_email: str = ""
     smtp_password: str = ""
