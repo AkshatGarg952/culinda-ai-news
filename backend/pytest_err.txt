@@ -1,0 +1,39 @@
+============================= test session starts =============================
+platform win32 -- Python 3.12.5, pytest-8.3.3, pluggy-1.6.0 -- C:\Users\garga\AppData\Local\Programs\Python\Python312\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Users\garga\OneDrive\Desktop\Culinda\culinda-ai-news\backend
+configfile: pytest.ini
+plugins: anyio-4.10.0, langsmith-0.4.60, asyncio-0.23.6
+asyncio: mode=Mode.AUTO
+collecting ... collected 3 items
+
+tests/test_normalizer.py::test_normalize_article_html_stripping FAILED   [ 33%]
+tests/test_normalizer.py::test_normalize_article_url_cleaning PASSED     [ 66%]
+tests/test_normalizer.py::test_normalize_article_summary_truncation PASSED [100%]
+
+================================== FAILURES ===================================
+____________________ test_normalize_article_html_stripping ____________________
+
+    def test_normalize_article_html_stripping():
+        raw = ParsedArticle(
+            title="Breaking <script>alert('xss')</script> News",
+            summary="<p>This is a <b>bold</b> statement with <a href='link'>links</a>.</p>",
+            url="https://example.com/news?tracking_id=123",
+            source_id="00000000-0000-0000-0000-000000000001"
+        )
+    
+        normalized = normalize_article(raw)
+    
+        assert "Breaking News" in normalized.title
+        assert "<script>" not in normalized.title
+>       assert "This is a bold statement with links." == normalized.summary
+E       AssertionError: assert 'This is a bo...t with links.' == 'This is a bo... with links .'
+E         
+E         - This is a bold statement with links .
+E         ?                                    -
+E         + This is a bold statement with links.
+
+tests\test_normalizer.py:17: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_normalizer.py::test_normalize_article_html_stripping - Asse...
+========================= 1 failed, 2 passed in 0.51s =========================
