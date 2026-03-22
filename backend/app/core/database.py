@@ -9,7 +9,9 @@ if database_url.startswith("postgres://"):
 elif database_url.startswith("postgresql://") and "asyncpg" not in database_url:
     database_url = database_url.replace("postgresql://", "postgresql+asyncpg://", 1)
 
-connect_args = {}
+connect_args = {
+    "channel_binding": "disable",  # prevent channel_binding kwarg mismatch across SQLAlchemy/asyncpg versions
+}
 if "sslmode" in database_url:
     parsed = urllib.parse.urlparse(database_url)
     query = dict(urllib.parse.parse_qsl(parsed.query))
