@@ -1,7 +1,14 @@
 import axios from 'axios';
 
+const backendUrl = (import.meta.env.VITE_BACKEND_URL || '')
+  .trim()
+  .replace(/\/+$/, '')
+  .replace(/\/api$/, '');
+
+const apiBaseUrl = backendUrl ? `${backendUrl}/api` : '/api';
+
 const api = axios.create({
-  baseURL: '/api',
+  baseURL: apiBaseUrl,
 });
 
 export const getNewsFeed = async (params) => {
@@ -41,6 +48,11 @@ export const triggerBroadcast = async (payload) => {
 
 export const generateAiContent = async (endpoint, newsItemId) => {
   const { data } = await api.post(`/ai/${endpoint}`, { news_item_id: newsItemId });
+  return data;
+};
+
+export const generateNewsletterDigest = async (newsItemIds) => {
+  const { data } = await api.post('/ai/newsletter-digest', { news_item_ids: newsItemIds });
   return data;
 };
 

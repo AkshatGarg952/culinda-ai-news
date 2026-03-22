@@ -1,9 +1,12 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { getFavorites, toggleFavorite, generateAiContent } from '../services/api';
+import { getFavorites, toggleFavorite, generateNewsletterDigest } from '../services/api';
 import NewsCard from '../components/NewsCard';
 import BroadcastModal from '../components/BroadcastModal';
 import { Share2 } from 'lucide-react';
+
+const buildFallbackDigest = (items) =>
+  items.map((favorite) => `- ${favorite.news_item.title}\n  ${favorite.news_item.url}`).join('\n\n');
 
 export default function FavoritesPage() {
   const [page, setPage] = useState(1);
@@ -11,17 +14,16 @@ export default function FavoritesPage() {
   const [newsletterContent, setNewsletterContent] = useState(null);
   const [isGeneratingDigest, setIsGeneratingDigest] = useState(false);
 
-
   const { data, isLoading, refetch } = useQuery({
     queryKey: ['favorites', page],
     queryFn: () => getFavorites({ page, page_size: 20 }),
     keepPreviousData: true,
-    staleTime: 0,          // always consider data stale
-    refetchOnMount: true,  // re-fetch every time the page is visited
+    staleTime: 0,
+    refetchOnMount: true,
   });
 
   const handleUnfavorite = async (article) => {
-    const favItem = data.items.find(f => f.news_item.id === article.id);
+    const favItem = data.items.find((favorite) => favorite.news_item.id === article.id);
     if (favItem) {
       await toggleFavorite(article.id, true, favItem.id);
       refetch();
@@ -30,18 +32,14 @@ export default function FavoritesPage() {
 
   const handleBroadcastAll = async () => {
     if (!data?.items?.length) return;
+
     setIsGeneratingDigest(true);
     try {
-      const ids = data.items.map(f => f.news_item.id);
-      const res = await fetch('/api/ai/newsletter-digest', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ news_item_ids: ids }),
-      });
-      const json = await res.json();
-      setNewsletterContent(json.generated_content || data.items.map(f => `• ${f.news_item.title}\n  ${f.news_item.url}`).join('\n\n'));
+      const ids = data.items.map((favorite) => favorite.news_item.id);
+      const response = await generateNewsletterDigest(ids);
+      setNewsletterContent(response.generated_content || buildFallbackDigest(data.items));
     } catch {
-      setNewsletterContent(data.items.map(f => `• ${f.news_item.title}\n  ${f.news_item.url}`).join('\n\n'));
+      setNewsletterContent(buildFallbackDigest(data.items));
     } finally {
       setIsGeneratingDigest(false);
     }
@@ -49,7 +47,7 @@ export default function FavoritesPage() {
 
   const mapToArticle = (favorite) => ({
     ...favorite.news_item,
-    favorite_id: favorite.id
+    favorite_id: favorite.id,
   });
 
   return (
@@ -71,8 +69,8 @@ export default function FavoritesPage() {
 
       {isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[...Array(6)].map((_, i) => (
-            <div key={i} className="h-64 bg-gray-100 rounded-lg animate-pulse" />
+          {[...Array(6)].map((_, index) => (
+            <div key={index} className="h-64 bg-gray-100 rounded-lg animate-pulse" />
           ))}
         </div>
       ) : data?.items?.length === 0 ? (
@@ -81,10 +79,10 @@ export default function FavoritesPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {data?.items?.map(fav => (
-            <NewsCard 
-              key={fav.id} 
-              article={mapToArticle(fav)}
+          {data.items.map((favorite) => (
+            <NewsCard
+              key={favorite.id}
+              article={mapToArticle(favorite)}
               isFavorited={true}
               onFavoriteToggle={handleUnfavorite}
               onBroadcastClick={setBroadcastArticle}
@@ -101,7 +99,12 @@ export default function FavoritesPage() {
         <div className="mt-8 bg-white rounded-lg shadow p-6">
           <div className="flex justify-between items-center mb-3">
             <h3 className="text-lg font-semibold text-gray-900">Newsletter Digest</h3>
-            <button onClick={() => setNewsletterContent(null)} className="text-gray-400 hover:text-gray-600 text-sm">Dismiss</button>
+            <button
+              onClick={() => setNewsletterContent(null)}
+              className="text-gray-400 hover:text-gray-600 text-sm"
+            >
+              Dismiss
+            </button>
           </div>
           <textarea
             rows={12}
@@ -110,7 +113,9 @@ export default function FavoritesPage() {
             value={newsletterContent}
           />
           <button
-            onClick={() => { navigator.clipboard.writeText(newsletterContent); }}
+            onClick={() => {
+              navigator.clipboard.writeText(newsletterContent);
+            }}
             className="mt-3 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700"
           >
             Copy to Clipboard

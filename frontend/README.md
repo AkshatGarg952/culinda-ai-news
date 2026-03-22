@@ -1,5 +1,21 @@
 # React + Vite
 
+## Frontend Backend URL
+
+Create `frontend/.env` and set:
+
+```env
+VITE_BACKEND_URL=http://localhost:8000
+```
+
+Use your deployed backend URL in production, for example:
+
+```env
+VITE_BACKEND_URL=https://your-backend-domain.com
+```
+
+All frontend API calls now use this value. If `VITE_BACKEND_URL` is empty, the app falls back to `/api`.
+
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
 Currently, two official plugins are available:
